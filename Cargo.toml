@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 rodio = "0.13.0"
+reqwest = { version = "0.10", features = ["json"] }
+tokio = { version = "0.2", features = ["full"] }

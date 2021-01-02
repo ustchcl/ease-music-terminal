@@ -8,5 +8,9 @@ edition = "2018"
 
 [dependencies]
 rodio = "0.13.0"
-reqwest = { version = "0.10", features = ["json"] }
+reqwest = { version = "0.10", features = ["json", "blocking", "cookies"] }
 tokio = { version = "0.2", features = ["full"] }
+dirs = "3.0.1"
+error-chain = "0.12.4"
+tui = { version = "0.14.0", features = ["crossterm"], default-features = false }
+crossterm = { version = "0.18" }

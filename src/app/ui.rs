@@ -21,21 +21,31 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_widget(ui, chunks[0]);
 }
 
-pub fn draw_login<B: Backend>(f: &mut Frame<B>) {
+pub fn draw_login<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints(
-            [
-                Constraint::Percentage(10),
-                Constraint::Percentage(80),
-                Constraint::Percentage(10),
-            ]
+            [Constraint::Length(3), Constraint::Min(0)]
             .as_ref(),
         )
         .split(f.size());
 
-    let block = Block::default().title("Login").borders(Borders::ALL);
+    let block_username = ListItem::new("username");
+    let block_password = ListItem::new("password");
+    let list = List::new(vec![
+        block_username,
+        block_password
+    ]).block(Block::default().title("Login").borders(Borders::ALL))
+    .highlight_style(
+        Style::default()
+            .bg(Color::LightGreen)
+            .add_modifier(Modifier::BOLD),
+    ).highlight_symbol(">> ");
 
-    f.render_widget(block, chunks[0]);
+
+
+
+    f.render_widget(list, chunks[0]);
+
 }

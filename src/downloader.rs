@@ -3,6 +3,7 @@ use reqwest::header::{HeaderValue, CONTENT_LENGTH, RANGE};
 use reqwest::StatusCode;
 use std::fs::File;
 use std::str::FromStr;
+use std::io::copy;
 
 error_chain! {
     foreign_links {
@@ -39,7 +40,10 @@ impl Iterator for PartialRangeIter {
     } else {
       let prev_start = self.start;
       self.start += std::cmp::min(self.buffer_size as u64, self.end - self.start + 1);
-      Some(HeaderValue::from_str(&format!("bytes={}-{}", prev_start, self.start - 1)).expect("string provided by format!"))
+      Some(
+        HeaderValue::from_str(&format!("bytes={}-{}", prev_start, self.start - 1))
+          .expect("string provided by format!"),
+      )
     }
   }
 }
@@ -47,36 +51,13 @@ impl Iterator for PartialRangeIter {
 pub struct Downloader {}
 
 impl Downloader {
-    pub fn download(url: &str, filepath: std::path::PathBuf) -> Result<()>{
-        const CHUNK_SIZE: u32 = 10240;
-          
-        let client = reqwest::blocking::Client::new();
-        let response = client.head(url).send()?;
-        let length = response
-          .headers()
-          .get(CONTENT_LENGTH)
-          .ok_or("response doesn't include the content length")?;
-        let length = u64::from_str(length.to_str()?).map_err(|_| "invalid Content-Length header")?;
-          
-        let mut output_file = File::create(filepath)?;
-          
-        println!("the file.length = {}", length);
-        println!("starting download...");
-        for range in PartialRangeIter::new(0, length - 1, CHUNK_SIZE)? {
-          println!("range {:?}", range);
-          let mut response = client.get(url).header(RANGE, range).send()?;
-          
-          let status = response.status();
-          if !(status == StatusCode::OK || status == StatusCode::PARTIAL_CONTENT) {
-            bail!("Unexpected server response: {}", status)
-          }
-          std::io::copy(&mut response, &mut output_file)?;
-        }
-          
-        let content = response.text()?;
-        std::io::copy(&mut content.as_bytes(), &mut output_file)?;
-      
-        println!("Finished with success!");
-        Ok(()) 
-    }
+  pub fn download(url: &str, filepath: std::path::PathBuf) -> Result<()> {
+    let mut output_file = match File::create(filepath) {
+      Err(why) => panic!("couldn't create {}", why),
+      Ok(file) => file,
+    };
+    let response = reqwest::blocking::get(url)?.text()?;
+    copy(&mut response.as_bytes(), &mut output_file);
+    Ok(())
+  }
 }

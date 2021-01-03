@@ -6,6 +6,8 @@ use dirs;
 mod app;
 #[allow(dead_code)]
 mod util;
+mod api_type;
+use anyhow::Result;
 
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
@@ -14,6 +16,7 @@ use crossterm::{
 };
 use tui::{backend::CrosstermBackend, Terminal};
 use crate::app::{ui, App};
+use crate::util::network;
 use std::{
     error::Error,
     io::{stdout, Write},
@@ -38,7 +41,7 @@ struct Cli {
     #[argh(option, default = "true")]
     enhanced_graphics: bool,
 }
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let cli: Cli = argh::from_env();
     enable_raw_mode()?;
 
@@ -70,9 +73,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     let mut app = App::new("Ease Music Termianl");
+    let account = network::login(&mut app)?;
+    println!("yeah!");
+    let playlists = network::playlists(&mut app)?;
+    println!("my playlist: {:?}", app.playlists);
+
     terminal.clear()?;
     loop {
-        terminal.draw(|f| ui::draw_login(f, &mut app))?;
+        terminal.draw(|f| ui::draw_main_page(f, &mut app))?;
         match rx.recv()? {
             Event::Input(event) => match event.code {
                 KeyCode::Char('q') => {
@@ -90,6 +98,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 KeyCode::Up => app.on_up(),
                 KeyCode::Right => app.on_right(),
                 KeyCode::Down => app.on_down(),
+                KeyCode::Enter => app.on_enter(),
                 _ => {}
             },
             Event::Tick => {

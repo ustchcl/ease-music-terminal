@@ -3,7 +3,7 @@ use crate::app::App;
 use anyhow::Result;
 use reqwest::{self};
 use crate::downloader::Downloader;
-use std::fs::File;
+use serde_json;
 
 fn base_url() -> String {
   "http://49.234.74.97:3000".to_string()
@@ -14,7 +14,7 @@ pub fn login(app: &mut App) -> Result<()> {
     "{}/login/cellphone?phone=18500975410&password=s1s2s3",
     base_url()
   );
-  let res = reqwest::blocking::get(&url)?;
+  let res = app.client.get(&url).send()?;
   let account = res.json::<AccountDetail>()?;
   app.userinfo = Option::Some(account);
   Ok(())
@@ -23,7 +23,7 @@ pub fn login(app: &mut App) -> Result<()> {
 pub fn playlists(app: &mut App) -> Result<()> {
   let user_id = app.userinfo.as_ref().map(|a| a.account.id).unwrap_or(1);
   let url = format!("{}/user/playlist?uid={}", base_url(), user_id);
-  let res = reqwest::blocking::get(&url)?;
+  let res = app.client.get(&url).send()?;
   let user_playlist = res.json::<UserPlaylist>()?;
   app.set_playlists(user_playlist.playlist);
   Ok(())
@@ -32,9 +32,8 @@ pub fn playlists(app: &mut App) -> Result<()> {
 pub fn get_playlist_detail(app: &mut App) -> Result<()> {
   let id = app.playlists_state.items[app.playlists_state.state.selected().unwrap_or(0)].id;
   let url = format!("{}/playlist/detail?id={}", base_url(), id);
-  let res = reqwest::blocking::get(&url)?;
+  let res = app.client.get(&url).send()?;
   let playlist_detail = res.json::<PlaylistDetailRep>()?;
-  println!("{:?}", playlist_detail);
   app.set_current_playlist(playlist_detail.playlist.tracks);
   Ok(())
 }

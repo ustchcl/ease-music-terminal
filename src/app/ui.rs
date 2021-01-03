@@ -1,4 +1,4 @@
-use crate::app::App;
+use crate::app::{App, Focus};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -115,32 +115,37 @@ pub fn draw_playlists<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let items: Vec<ListItem> = app.playlists_state.items.iter().map(|i| {
         let mut lines = vec![Spans::from(i.name.clone())];
         ListItem::new(lines).style(Style::default().fg(Color::Black).bg(Color::White))
-    })
+    })  
     .collect();
+    let is_focus = app.focus == Focus::Playlist;
     let items = List::new(items)
         .block(Block::default().borders(Borders::ALL).title("创建的歌单"))
         .highlight_style(
             Style::default()
-                .bg(Color::LightGreen)
+                .bg(if is_focus { Color::LightGreen } else { Color::DarkGray })
                 .add_modifier(Modifier::BOLD),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol(if is_focus { "☞ " } else { ">> " });
     f.render_stateful_widget(items, area, &mut app.playlists_state.state);
 }
 
 pub fn draw_tracks<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let items: Vec<ListItem> = app.current_playlist_track_state.items.iter().map(|i| {
-        let mut lines = vec![Spans::from(i.name.clone())];
+    let len = app.current_playlist_track_state.items.len(); 
+    let items: Vec<ListItem> = (0..len).into_iter().map(|i| {
+        let mut lines = vec![Spans::from(
+            format!("{}. {}", i, app.current_playlist_track_state.items[i].name.clone())
+        )];
         ListItem::new(lines).style(Style::default().fg(Color::Black).bg(Color::White))
     })
     .collect();
+    let is_focus = app.focus == Focus::Track;
     let items = List::new(items)
         .block(Block::default().borders(Borders::ALL).title("歌曲列表"))
         .highlight_style(
             Style::default()
-                .bg(Color::LightGreen)
+                .bg(if is_focus { Color::LightGreen } else { Color::DarkGray })
                 .add_modifier(Modifier::BOLD),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol(if is_focus { "☞ " } else { ">> "});
     f.render_stateful_widget(items, area, &mut app.current_playlist_track_state.state);
 }

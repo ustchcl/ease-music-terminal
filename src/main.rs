@@ -35,7 +35,7 @@ enum Event<I> {
 #[derive(Debug, FromArgs)]
 struct Cli {
     /// time in ms between two ticks.
-    #[argh(option, default = "250")]
+    #[argh(option, default = "1000")]
     tick_rate: u64,
     /// whether unicode symbols are used to improve the overall look of the app
     #[argh(option, default = "true")]
@@ -72,13 +72,14 @@ fn main() -> Result<()> {
         }
     });
 
-    let mut app = App::new("Ease Music Termianl");
-    let account = network::login(&mut app)?;
-    println!("yeah!");
-    let playlists = network::playlists(&mut app)?;
-    println!("my playlist: {:?}", app.playlists);
+    
 
+    let mut app = App::new("Ease Music Termianl");
+    network::login(&mut app)?;
+    network::playlists(&mut app)?;
+    network::get_playlist_detail(&mut app)?;
     terminal.clear()?;
+    
     loop {
         terminal.draw(|f| ui::draw_main_page(f, &mut app))?;
         match rx.recv()? {

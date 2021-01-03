@@ -88,7 +88,7 @@ pub struct Track {
   pub id: i64,
   pub name: String,
   pub ar: Vec<Artist>,
-  pub al: Vec<Album>,
+  pub al: Album,
   pub dt: i32, // duration
 }
 

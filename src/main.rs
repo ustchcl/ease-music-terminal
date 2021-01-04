@@ -1,22 +1,22 @@
 // use std::io::BufReader;
-use rodio::{Sink, OutputStream, Decoder};
+use rodio::{Decoder, OutputStream, Sink};
 // use std::fs::File;
 mod downloader;
 use dirs;
+mod api_type;
 mod app;
 #[allow(dead_code)]
 mod util;
-mod api_type;
 use anyhow::Result;
 
+use crate::app::{ui, App};
+use crate::util::network;
+use argh::FromArgs;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use tui::{backend::CrosstermBackend, Terminal};
-use crate::app::{ui, App};
-use crate::util::network;
 use std::{
     error::Error,
     io::{stdout, Write},
@@ -24,7 +24,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use argh::FromArgs;
+use tui::{backend::CrosstermBackend, Terminal};
 
 enum Event<I> {
     Input(I),
@@ -72,14 +72,14 @@ fn main() -> Result<()> {
         }
     });
 
-    
-
-    let mut app = App::new("Ease Music Termianl");
+    let (_stream, handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&handle).unwrap();
+    let mut app = App::new("Ease Music Termianl", &sink);
     network::login(&mut app)?;
     network::playlists(&mut app)?;
     network::get_playlist_detail(&mut app)?;
     terminal.clear()?;
-    
+
     loop {
         terminal.draw(|f| ui::draw_main_page(f, &mut app))?;
         match rx.recv()? {
@@ -109,24 +109,18 @@ fn main() -> Result<()> {
     }
 
     Ok(())
-}   
+}
 
-// // #[tokio::main]
-// fn nss() -> io::Result<()> {
-//     let filepath = dirs::audio_dir().map(|p| p.join("music.flac")).unwrap();
-//     println!("filepath = {}", filepath.to_str().unwrap());
-//     let music_flac = "http://m801.music.126.net/20210101180909/627de66f030afed918543495211e574e/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/4779027660/d9e2/322a/bcbe/bad0ba4cafe18cbc02ccae6ae2d6e98f.flac";
-//     let _ = downloader::Downloader::download(music_flac, filepath);
-//     let (_stream, handle) = OutputStream::try_default().unwrap();
-//     let sink = Sink::try_new(&handle).unwrap();
-//     // let file = File::open("./music.mp3").await?;
-//     // let buf = BufReader::new(file);
-//     // let mut stream = TcpStream::connect(music_flac).unwrap();
-//     let file2 = std::fs::File::open("./music.mp3").unwrap();
-//     let buf2 = std::io::BufReader::new(file2);
-//     sink.append(Decoder::new(buf2).unwrap());
-//     sink.sleep_until_end();
-//     Ok(())
-// }
-
-
+fn _main() -> std::io::Result<()> {
+    let filepath = dirs::audio_dir()
+        .map(|p| p.join("QQ斗地主背景音乐（Normal）.mp3"))
+        .unwrap();
+    println!("filepath = {}", filepath.to_str().unwrap());
+    let (_stream, handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&handle).unwrap();
+    let file2 = std::fs::File::open(filepath).unwrap();
+    let buf2 = std::io::BufReader::new(file2);
+    sink.append(Decoder::new(buf2).unwrap());
+    sink.sleep_until_end();
+    Ok(())
+}

@@ -1,6 +1,7 @@
 #[cfg(feature = "termion")]
 pub mod event;
 pub mod network;
+pub mod utils;
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;

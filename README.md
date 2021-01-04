@@ -3,6 +3,15 @@
 apt install libasound2-dev
 ```
 
+## v0.1
+- 列表
+- 播放
+
+## v0.2
+- 进度条
+- 音量控制 `-` `+`
+- 暂停和播放 `Space`
+
 
 ### 网易云API
 

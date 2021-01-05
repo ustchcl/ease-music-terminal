@@ -192,14 +192,15 @@ pub fn draw_tracks<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
 fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let current_track = app.current_playing_track();
-    let current_track_name = &current_track.name;
-    let loved = app.is_liked(&current_track.id);
-    let current_track_artist_name = current_track
-        .ar
+    let current_track_name = current_track.as_ref().map(|x| x.name.as_str()).unwrap_or("--");
+    let loved = current_track.as_ref().map(|x| app.is_liked(&x.id)).unwrap_or(false);
+    let current_track_artist_name = current_track.as_ref().map(|t|
+        t.ar
         .iter()
         .map(|a| a.name.clone())
         .collect::<Vec<_>>()
-        .join(",");
+        .join(",")
+    ).unwrap_or("--".to_string());
     let is_pause = app.player_controller.is_pause;
     let volume = (app.sink.volume() * 100.0) as u16;
 
@@ -227,10 +228,12 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     } else {
         "播放状态: ▶️"
     };
-    f.render_widget(Paragraph::new(vec![
-        Spans::from(pause_play_text),
-        Spans::from("上一首: Ctrl+Left 下一首: Ctrl+Right"),
-    ]), chunks[1]);
+    f.render_widget(Paragraph::new(
+        vec![
+            Spans::from(pause_play_text),
+            Spans::from("上一首: Ctrl+←  下一首: Ctrl+→")
+        ]
+    ), chunks[1]);
 
     let chunks_volume = Layout::default()
     .direction(Direction::Vertical)
@@ -257,7 +260,7 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_percent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let duration = app.current_playing_track().dt;
+    let duration = app.current_playing_track().as_ref().map(|x| x.dt).unwrap_or(100000);
     let played = app.player_controller.seek * 1000;
     let percent = (((played as f32) * 100.0) / (duration as f32)) as u16;
     let gauge_play_duration = Gauge::default()

@@ -85,7 +85,6 @@ impl<'a> App<'a> {
     }
 
     pub fn set_current_playlist(&mut self, list: Vec<Track>) {
-        self.current_tracks = list.clone();
         self.current_playlist_track_state = StatefulList::with_items(list);
         self.current_playlist_track_state.next();
     }
@@ -138,11 +137,12 @@ impl<'a> App<'a> {
                     .selected()
                     .unwrap_or(0);
                 self.playing_playlist_idx = self
-                    .current_playlist_track_state
+                    .playlists_state
                     .state
                     .selected()
                     .unwrap_or(0);
                 self.download_and_play_track(track);
+                self.current_tracks = self.current_playlist_track_state.items.clone();
             }
         }
     }
@@ -241,8 +241,12 @@ impl<'a> App<'a> {
             .unwrap_or(0)])
     }
 
-    pub fn current_playing_track(&self) -> &Track {
-        &(self.current_tracks[self.current_track_idx])
+    pub fn current_playing_track(&self) -> Option<&Track> {
+        if self.current_tracks.is_empty() {
+            Option::None
+        } else {
+            Option::Some(&self.current_tracks[self.current_track_idx])
+        }
     }
 
     pub fn current_playing_playlist(&self) -> &Playlist {

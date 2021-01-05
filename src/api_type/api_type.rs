@@ -65,14 +65,14 @@ pub struct UserPlaylist {
     pub code: i32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Artist {
     pub id: i64,
     pub name: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Album {
     pub id: i64,
@@ -80,7 +80,7 @@ pub struct Album {
     pub pic_url: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Track {
     pub id: i64,
@@ -126,5 +126,13 @@ pub struct MusicDetail {
 #[serde(rename_all = "camelCase")]
 pub struct Musics {
     pub data: Vec<MusicDetail>,
+    pub code: i32,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct LikeListRep {
+    pub ids: Vec<i64>,
+    pub check_point: i64,
     pub code: i32,
 }

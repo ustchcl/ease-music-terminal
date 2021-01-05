@@ -49,10 +49,10 @@ pub fn draw_main_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .margin(1)
         .constraints(
             [
-                Constraint::Percentage(8),
-                Constraint::Percentage(84),
-                Constraint::Percentage(8),
-                Constraint::Min(1),
+                Constraint::Min(2),
+                Constraint::Percentage(80),
+                Constraint::Min(2),
+                Constraint::Length(1),
             ]
             .as_ref(),
         )
@@ -191,9 +191,10 @@ pub fn draw_tracks<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let current_track_name = &(app.current_track().name);
-    let current_track_artist_name = app
-        .current_track()
+    let current_track = app.current_playing_track();
+    let current_track_name = &current_track.name;
+    let loved = app.is_liked(&current_track.id);
+    let current_track_artist_name = current_track
         .ar
         .iter()
         .map(|a| a.name.clone())
@@ -216,7 +217,7 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     f.render_widget(
         Paragraph::new(vec![
-            Spans::from(format!("🎶 {}", current_track_name)),
+            Spans::from(format!("🎶 {} {}", current_track_name, if loved {"🧡"} else {"🤍"})),
             Spans::from(format!("🎤 {}", current_track_artist_name)),
         ]),
         chunks[0],
@@ -226,7 +227,10 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     } else {
         "播放状态: ▶️"
     };
-    f.render_widget(Paragraph::new(Span::from(pause_play_text)), chunks[1]);
+    f.render_widget(Paragraph::new(vec![
+        Spans::from(pause_play_text),
+        Spans::from("上一首: Ctrl+Left 下一首: Ctrl+Right"),
+    ]), chunks[1]);
 
     let chunks_volume = Layout::default()
     .direction(Direction::Vertical)
@@ -238,20 +242,27 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         .as_ref(),
     )
     .split(chunks[2]);
+    let volume_icon = if volume > 50 {
+        "🔊"
+    } else if volume > 0 {
+        "🔉"
+    } else {
+        "🔈"
+    };
     let gauge = Gauge::default()
         .gauge_style(Style::default().fg(Color::Yellow).bg(Color::Black).add_modifier(Modifier::ITALIC))
-        .label(format!("🔊: {}/100", volume))
+        .label(format!("{}: {}%", volume_icon, volume))
         .percent(volume);
     f.render_widget(gauge, chunks_volume[0]);
 }
 
 fn draw_percent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let duration = app.current_track().dt;
+    let duration = app.current_playing_track().dt;
     let played = app.player_controller.seek * 1000;
     let percent = (((played as f32) * 100.0) / (duration as f32)) as u16;
     let gauge_play_duration = Gauge::default()
         .gauge_style(Style::default().fg(Color::Yellow).bg(Color::Black).add_modifier(Modifier::ITALIC))
         .label(format!("⌛: {}/{}", show_duration(played), show_duration(duration)))
-        .percent(percent);
+        .percent(percent.min(100));
     f.render_widget(gauge_play_duration, area);
 }

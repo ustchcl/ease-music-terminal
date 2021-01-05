@@ -13,6 +13,11 @@ apt install libasound2-dev
 - 暂停和播放 `Space`
 
 
+## v0.3
+- [x] 下一首, 上一首
+- [x] 自动下一首
+- [x] 修复BUG
+
 ### 网易云API
 
 #### 登陆

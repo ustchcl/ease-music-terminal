@@ -38,6 +38,15 @@ pub fn get_playlist_detail(app: &mut App) -> Result<()> {
     Ok(())
 }
 
+pub fn get_like_list(app: &mut App) -> Result<()> {
+    let user_id = app.userinfo.as_ref().map(|a| a.account.id).unwrap_or(1);
+    let url = format!("{}/likelist?uid={}", base_url(), user_id);
+    let res = app.client.get(&url).send()?;
+    let like_list = res.json::<LikeListRep>()?;
+    app.likelist = like_list.ids;
+    Ok(())
+}
+
 pub fn get_music_detail(ids: Vec<i64>, app: &App) -> Result<Vec<MusicDetail>> {
     let url = format!(
         "{}/song/url?id={}",

@@ -13,7 +13,7 @@ use crate::app::{ui, App};
 use crate::util::network;
 use argh::FromArgs;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode, KeyModifiers, KeyEvent},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -73,9 +73,9 @@ fn main() -> Result<()> {
     });
 
     let (_stream, handle) = OutputStream::try_default().unwrap();
-    let sink = Sink::try_new(&handle).unwrap();
-    let mut app = App::new("Ease Music Termianl", &sink);
+    let mut app = App::new("Ease Music Termianl", &handle);
     network::login(&mut app)?;
+    network::get_like_list(&mut app)?;
     network::playlists(&mut app)?;
     network::get_playlist_detail(&mut app)?;
     terminal.clear()?;
@@ -83,24 +83,35 @@ fn main() -> Result<()> {
     loop {
         terminal.draw(|f| ui::draw_main_page(f, &mut app))?;
         match rx.recv()? {
-            Event::Input(event) => match event.code {
-                KeyCode::Char('q') => {
-                    disable_raw_mode()?;
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    )?;
-                    terminal.show_cursor()?;
-                    break;
+            Event::Input(event) => match event {
+                KeyEvent {
+                    modifiers: KeyModifiers::CONTROL,
+                    code
+                } => {
+                    app.on_ctrl_key(code);
+                },
+                _ => {
+                    match event.code {
+                        KeyCode::Char('q') => {
+                            disable_raw_mode()?;
+                            execute!(
+                                terminal.backend_mut(),
+                                LeaveAlternateScreen,
+                                DisableMouseCapture
+                            )?;
+                            terminal.show_cursor()?;
+                            break;
+                        },
+                        KeyCode::Char(c) => app.on_key(c),
+                        KeyCode::Left => app.on_left(),
+                        KeyCode::Up => app.on_up(),
+                        KeyCode::Right => app.on_right(),
+                        KeyCode::Down => app.on_down(),
+                        KeyCode::Enter => app.on_enter(),
+                        _ => {}
+                    } 
                 }
-                KeyCode::Char(c) => app.on_key(c),
-                KeyCode::Left => app.on_left(),
-                KeyCode::Up => app.on_up(),
-                KeyCode::Right => app.on_right(),
-                KeyCode::Down => app.on_down(),
-                KeyCode::Enter => app.on_enter(),
-                _ => {}
+                
             },
             Event::Tick => {
                 app.on_tick();

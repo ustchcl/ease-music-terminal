@@ -1,4 +1,4 @@
-use crate::app::{App, Focus};
+use crate::app::{input::Input, App, Focus, Route};
 use crate::util::utils::{pre_format, show_duration};
 use tui::{
     backend::Backend,
@@ -41,6 +41,15 @@ pub fn draw_login<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">> ");
 
     f.render_widget(list, chunks[0]);
+}
+
+pub fn draw_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    match app.route {
+        Route::Login => draw_login_page(f, app),
+        Route::Home => draw_main_page(f, app),
+        Route::Search => draw_search_page(f, app),
+        Route::MusicAnalysis => draw_music_analysis(f, app),
+    }
 }
 
 pub fn draw_main_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
@@ -106,6 +115,7 @@ pub fn draw_main_content<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect
     draw_tracks(f, app, chunks[1]);
 }
 
+/// 音乐播放列表
 pub fn draw_playlists<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let len = app.playlists_state.items.len();
     let items: Vec<ListItem> = (0..len)
@@ -153,6 +163,7 @@ pub fn draw_playlists<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 //     );
 // }
 
+/// 绘制播放列表的音乐列表
 pub fn draw_tracks<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let len = app.current_playlist_track_state.items.len();
     let items: Vec<ListItem> = (0..len)
@@ -190,17 +201,26 @@ pub fn draw_tracks<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     f.render_stateful_widget(items, area, &mut app.current_playlist_track_state.state);
 }
 
+/// 绘制音乐控制器
 fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let current_track = app.current_playing_track();
-    let current_track_name = current_track.as_ref().map(|x| x.name.as_str()).unwrap_or("--");
-    let loved = current_track.as_ref().map(|x| app.is_liked(&x.id)).unwrap_or(false);
-    let current_track_artist_name = current_track.as_ref().map(|t|
-        t.ar
-        .iter()
-        .map(|a| a.name.clone())
-        .collect::<Vec<_>>()
-        .join(",")
-    ).unwrap_or("--".to_string());
+    let current_track_name = current_track
+        .as_ref()
+        .map(|x| x.name.as_str())
+        .unwrap_or("--");
+    let loved = current_track
+        .as_ref()
+        .map(|x| app.is_liked(&x.id))
+        .unwrap_or(false);
+    let current_track_artist_name = current_track
+        .as_ref()
+        .map(|t| {
+            t.ar.iter()
+                .map(|a| a.name.clone())
+                .collect::<Vec<_>>()
+                .join(",")
+        })
+        .unwrap_or("--".to_string());
     let is_pause = app.player_controller.is_pause;
     let volume = (app.sink.volume() * 100.0) as u16;
 
@@ -218,7 +238,11 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     f.render_widget(
         Paragraph::new(vec![
-            Spans::from(format!("🎶 {} {}", current_track_name, if loved {"🧡"} else {"🤍"})),
+            Spans::from(format!(
+                "🎶 {} {}",
+                current_track_name,
+                if loved { "🧡" } else { "🤍" }
+            )),
             Spans::from(format!("🎤 {}", current_track_artist_name)),
         ]),
         chunks[0],
@@ -228,23 +252,18 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     } else {
         "播放状态: ▶️"
     };
-    f.render_widget(Paragraph::new(
-        vec![
+    f.render_widget(
+        Paragraph::new(vec![
             Spans::from(pause_play_text),
-            Spans::from("上一首: Ctrl+←  下一首: Ctrl+→")
-        ]
-    ), chunks[1]);
+            Spans::from("上一首: Ctrl+←  下一首: Ctrl+→"),
+        ]),
+        chunks[1],
+    );
 
     let chunks_volume = Layout::default()
-    .direction(Direction::Vertical)
-    .constraints(
-        [
-            Constraint::Min(1),
-            Constraint::Percentage(100),
-        ]
-        .as_ref(),
-    )
-    .split(chunks[2]);
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(1), Constraint::Percentage(100)].as_ref())
+        .split(chunks[2]);
     let volume_icon = if volume > 50 {
         "🔊"
     } else if volume > 0 {
@@ -253,19 +272,114 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         "🔈"
     };
     let gauge = Gauge::default()
-        .gauge_style(Style::default().fg(Color::Yellow).bg(Color::Black).add_modifier(Modifier::ITALIC))
+        .gauge_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .bg(Color::Black)
+                .add_modifier(Modifier::ITALIC),
+        )
         .label(format!("{}: {}%", volume_icon, volume))
         .percent(volume);
     f.render_widget(gauge, chunks_volume[0]);
 }
 
 fn draw_percent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let duration = app.current_playing_track().as_ref().map(|x| x.dt).unwrap_or(100000);
+    let duration = app
+        .current_playing_track()
+        .as_ref()
+        .map(|x| x.dt)
+        .unwrap_or(100000);
     let played = app.player_controller.seek * 1000;
     let percent = (((played as f32) * 100.0) / (duration as f32)) as u16;
     let gauge_play_duration = Gauge::default()
-        .gauge_style(Style::default().fg(Color::Yellow).bg(Color::Black).add_modifier(Modifier::ITALIC))
-        .label(format!("⌛: {}/{}", show_duration(played), show_duration(duration)))
+        .gauge_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .bg(Color::Black)
+                .add_modifier(Modifier::ITALIC),
+        )
+        .label(format!(
+            "⌛: {}/{}",
+            show_duration(played),
+            show_duration(duration)
+        ))
         .percent(percent.min(100));
     f.render_widget(gauge_play_duration, area);
+}
+
+/// 绘制登录页
+fn draw_login_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    let username_input = Input::default()
+        .title("用户名".to_string())
+        .val("请输入用户名".to_string())
+        .block(Block::default().borders(Borders::ALL));
+    let password_input = Input::default()
+        .title("密码".to_string())
+        .val("请输入密码".to_string())
+        .block(Block::default().title("密码").borders(Borders::ALL));
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(38),
+                Constraint::Min(3),
+                Constraint::Min(3),
+                Constraint::Percentage(62),
+            ]
+            .as_ref(),
+        )
+        .split(f.size());
+
+    let app_title = vec![
+        Spans::from("███████╗ █████╗ ███████╗███████╗    ███╗   ███╗██╗   ██╗███████╗██╗ ██████╗"),
+        Spans::from("██╔════╝██╔══██╗██╔════╝██╔════╝    ████╗ ████║██║   ██║██╔════╝██║██╔════╝"),
+        Spans::from("█████╗  ███████║███████╗█████╗      ██╔████╔██║██║   ██║███████╗██║██║     "),
+        Spans::from("██╔══╝  ██╔══██║╚════██║██╔══╝      ██║╚██╔╝██║██║   ██║╚════██║██║██║     "),
+        Spans::from("███████╗██║  ██║███████║███████╗    ██║ ╚═╝ ██║╚██████╔╝███████║██║╚██████╗"),
+        Spans::from("╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝    ╚═╝     ╚═╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝"),
+    ];
+    f.render_widget(Paragraph::new(app_title), chunks[0]);
+    draw_input(f, true, "用户名", "请输入用户名", chunks[1], app);
+    draw_input(f, false, "密码", "请输入密码", chunks[2], app);
+}
+
+fn draw_input<B: Backend>(
+    f: &mut Frame<B>,
+    focus: bool,
+    title: &str,
+    val: &str,
+    area: Rect,
+    app: &App,
+) {
+    let text = Paragraph::new(if focus {
+        Spans::from(vec![
+            Span::from(val),
+            Span::styled(
+                " ",
+                Style::default().bg(if app.system_tick % 2 == 0 {
+                    Color::Black
+                } else {
+                    Color::White
+                }),
+            ),
+        ])
+    } else {
+        Spans::from(val)
+    })
+    .block(Block::default().title(title).borders(Borders::ALL));
+    f.render_widget(text, area);
+}
+
+/// 绘制搜索页面
+fn draw_search_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    let block = Block::default().title("搜索").borders(Borders::ALL);
+    f.render_widget(block, f.size());
+}
+
+/// 绘制音乐播放详情
+fn draw_music_analysis<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    let block = Block::default().title("音乐").borders(Borders::ALL);
+    f.render_widget(block, f.size());
 }

@@ -74,14 +74,14 @@ fn main() -> Result<()> {
 
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let mut app = App::new("Ease Music Termianl", &handle);
-    network::login(&mut app)?;
-    network::get_like_list(&mut app)?;
-    network::playlists(&mut app)?;
-    network::get_playlist_detail(&mut app)?;
+    // network::login(&mut app)?;
+    // network::get_like_list(&mut app)?;
+    // network::playlists(&mut app)?;
+    // network::get_playlist_detail(&mut app)?;
     terminal.clear()?;
 
     loop {
-        terminal.draw(|f| ui::draw_main_page(f, &mut app))?;
+        terminal.draw(|f| ui::draw_ui(f, &mut app))?;
         match rx.recv()? {
             Event::Input(event) => match event {
                 KeyEvent {

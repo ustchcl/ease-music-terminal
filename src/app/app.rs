@@ -11,6 +11,14 @@ pub enum Focus {
     Track,
 }
 
+#[derive(PartialEq, Eq)]
+pub enum Route {
+    Login,         // 登陆页面
+    Home,          // 主页面
+    Search,        // 搜索页面
+    MusicAnalysis, // 音乐播放详情页面
+}
+
 pub struct PlayerController {
     pub is_pause: bool,
     pub seek: i32,
@@ -18,6 +26,12 @@ pub struct PlayerController {
 }
 
 pub struct App<'a> {
+    // 路由
+    pub route: Route,
+    callbacks: Vec<Box<dyn FnMut()>>,
+    // 系统运行总时间
+    pub system_tick: u64,
+
     pub client: Client,
 
     pub title: &'a str,
@@ -50,6 +64,9 @@ pub struct App<'a> {
 impl<'a> App<'a> {
     pub fn new(title: &'a str, handle: &'a OutputStreamHandle) -> Self {
         Self {
+            route: Route::Login,
+            callbacks: vec![],
+            system_tick: 0,
             client: Client::builder().cookie_store(true).build().unwrap(),
             title,
             should_quit: false,
@@ -136,11 +153,7 @@ impl<'a> App<'a> {
                     .state
                     .selected()
                     .unwrap_or(0);
-                self.playing_playlist_idx = self
-                    .playlists_state
-                    .state
-                    .selected()
-                    .unwrap_or(0);
+                self.playing_playlist_idx = self.playlists_state.state.selected().unwrap_or(0);
                 self.download_and_play_track(track);
                 self.current_tracks = self.current_playlist_track_state.items.clone();
             }
@@ -214,6 +227,7 @@ impl<'a> App<'a> {
     }
 
     pub fn on_tick(&mut self) {
+        self.system_tick += 1;
         if self.player_controller.is_pause {
             return;
         }
@@ -324,4 +338,22 @@ impl<'a> App<'a> {
 
     //  显示帮助
     pub fn show_help(&mut self) {}
+}
+
+// 路由
+impl<'a> App<'a> {
+    pub fn goto_page(&mut self, route: Route) {
+        self.route = route;
+    }
+}
+
+// 回调函数
+
+impl<'a> App<'a> {
+    pub fn register<F>(&mut self, mut func: F)
+    where
+        F: FnMut(),
+    {
+        // self.callbacks.push(Box::new(func));
+    }
 }

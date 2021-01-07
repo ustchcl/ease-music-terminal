@@ -1,6 +1,6 @@
 mod app;
-pub mod ui;
 mod input;
+pub mod ui;
 
-pub use input::Input;
 pub use app::{App, Focus, Route};
+pub use input::Input;

@@ -309,15 +309,6 @@ fn draw_percent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
 /// 绘制登录页
 fn draw_login_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let username_input = Input::default()
-        .title("用户名".to_string())
-        .val("请输入用户名".to_string())
-        .block(Block::default().borders(Borders::ALL));
-    let password_input = Input::default()
-        .title("密码".to_string())
-        .val("请输入密码".to_string())
-        .block(Block::default().title("密码").borders(Borders::ALL));
-
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -339,10 +330,17 @@ fn draw_login_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         Spans::from("██╔══╝  ██╔══██║╚════██║██╔══╝      ██║╚██╔╝██║██║   ██║╚════██║██║██║     "),
         Spans::from("███████╗██║  ██║███████║███████╗    ██║ ╚═╝ ██║╚██████╔╝███████║██║╚██████╗"),
         Spans::from("╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝    ╚═╝     ╚═╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝"),
+        Spans::from("                                                            by ustchcl     "),
+    ];
+
+    let login_helper = vec![
+        Spans::from("切换和激活输入框\t Ctrl + i"),
+        Spans::from("登录 \t\t\t Ctrl + Enter"),
     ];
     f.render_widget(Paragraph::new(app_title), chunks[0]);
-    draw_input(f, true, "用户名", "请输入用户名", chunks[1], app);
-    draw_input(f, false, "密码", "请输入密码", chunks[2], app);
+    app.inputs[0].draw(f, chunks[1], &app.system_tick);
+    app.inputs[1].draw(f, chunks[2], &app.system_tick);
+    f.render_widget(Paragraph::new(login_helper), chunks[3]);
 }
 
 fn draw_input<B: Backend>(

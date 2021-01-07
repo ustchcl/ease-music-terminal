@@ -11,8 +11,10 @@ fn base_url() -> String {
 
 pub fn login(app: &mut App) -> Result<()> {
     let url = format!(
-        "{}/login/cellphone?phone=18500975410&password=s1s2s3",
-        base_url()
+        "{}/login/cellphone?phone={}&password={}",
+        base_url(),
+        app.inputs[0].val,
+        app.inputs[1].val,
     );
     let res = app.client.get(&url).send()?;
     let account = res.json::<AccountDetail>()?;

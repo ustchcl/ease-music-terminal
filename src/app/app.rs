@@ -4,6 +4,8 @@ use crate::util::StatefulList;
 use crossterm::event::KeyCode;
 use reqwest::blocking::Client;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
+use crate::app::Input;
+use anyhow;
 
 #[derive(PartialEq, Eq)]
 pub enum Focus {
@@ -28,7 +30,8 @@ pub struct PlayerController {
 pub struct App<'a> {
     // 路由
     pub route: Route,
-    callbacks: Vec<Box<dyn FnMut()>>,
+    pub inputs: Vec<Input>,
+    
     // 系统运行总时间
     pub system_tick: u64,
 
@@ -65,7 +68,18 @@ impl<'a> App<'a> {
     pub fn new(title: &'a str, handle: &'a OutputStreamHandle) -> Self {
         Self {
             route: Route::Login,
-            callbacks: vec![],
+            inputs: vec![
+                Input::default()
+                    .title("👦用户名".to_string())
+                    .placeholder("请输入用户名".to_string())
+                    .block(true),
+                Input::default()
+                    .title("🔒密码".to_string())
+                    .placeholder("请输入密码".to_string())
+                    .is_password(true)
+                    .block(true)
+                    
+            ],
             system_tick: 0,
             client: Client::builder().cookie_store(true).build().unwrap(),
             title,
@@ -136,6 +150,9 @@ impl<'a> App<'a> {
     }
 
     pub fn on_enter(&mut self) {
+        if self.route != Route::Home {
+            return;
+        }
         match self.focus {
             Focus::Playlist => {
                 let _ = network::get_playlist_detail(self);
@@ -274,6 +291,9 @@ impl<'a> App<'a> {
 
 /// 播放控制
 impl<'a> App<'a> {
+    pub fn input_on_key(&mut self, key: KeyCode) {
+        self.inputs.iter_mut().for_each(|input| input.on_key(key));
+    }
     pub fn on_ctrl_key(&mut self, code: KeyCode) {
         match code {
             // 上一首
@@ -290,6 +310,12 @@ impl<'a> App<'a> {
             KeyCode::Char('d') => self.show_lrc(),
             // 帮助
             KeyCode::Char('h') => self.show_help(),
+            // 切换选中的输入框
+            KeyCode::Char('i') => self.focus_next_input(),
+            // 登录
+            KeyCode::Enter => {
+                self.login();
+            }
             _ => {}
         }
     }
@@ -338,12 +364,41 @@ impl<'a> App<'a> {
 
     //  显示帮助
     pub fn show_help(&mut self) {}
+
+    // 切换到下一个输入框
+    pub fn focus_next_input(&mut self) {
+        if !self.inputs.is_empty() {
+            let len = self.inputs.len();
+            let mut index = len - 1;
+            for i in 0..len {
+                if self.inputs[i].focus {
+                    index = i;
+                    
+                    break;
+                }
+            }
+            let next = (index + 1) % len;
+            self.inputs[index].focus = false;
+            self.inputs[next].focus = true;
+        }
+    }
 }
 
-// 路由
+// 功能函数
 impl<'a> App<'a> {
     pub fn goto_page(&mut self, route: Route) {
         self.route = route;
+    }
+
+    pub fn login(&mut self) -> anyhow::Result<()>{
+        network::login(self)?;
+        network::get_like_list(self)?;
+        network::playlists(self)?;
+        network::get_playlist_detail(self)?;
+
+        self.goto_page(Route::Home);
+
+        Ok(())
     }
 }
 

@@ -1,34 +1,58 @@
-use std::fmt;
+use crossterm::event::KeyCode;
 use tui::{
-    buffer::Buffer,
+    backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},
-    symbols,
-    widgets::{Block, Widget},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Paragraph},
+    Frame,
 };
 
 #[derive(Debug, Clone)]
-pub struct Input<'a> {
-    pub block: Option<Block<'a>>,
+pub struct Input {
+    pub block: bool,
     pub val: String,
     pub title: String,
     pub style: Style,
+    pub focus: bool,
+    pub is_password: bool,
+    pub placeholder: String,
 }
 
-impl<'a> Default for Input<'a> {
+impl Default for Input {
     fn default() -> Self {
         Self {
-            block: None,
+            block: true,
             val: "".to_string(),
+            placeholder: "".to_string(),
             title: "".to_string(),
             style: Style::default(),
+            focus: false,
+            is_password: false,
         }
     }
 }
 
-impl<'a> Input<'a> {
-    pub fn block(mut self, block: Block<'a>) -> Self {
-        self.block = Some(block);
+impl Input {
+    pub fn on_key(&mut self, key: KeyCode) {
+        if self.focus {
+            match key {
+                KeyCode::Enter => {
+                    self.focus = false;
+                },
+                KeyCode::Backspace => {
+                    self.val.pop();
+                },
+                KeyCode::Char(c) => {
+                    self.val.push(c);
+                }
+                _ => {},
+            }
+        }
+    }
+
+    pub fn block(mut self, block: bool) -> Self {
+        self.block = block;
         self
     }
 
@@ -37,8 +61,8 @@ impl<'a> Input<'a> {
         self
     }
 
-    pub fn val(mut self, val: String) -> Self {
-        self.val = val;
+    pub fn placeholder(mut self, placeholder: String) -> Self {
+        self.placeholder = placeholder;
         self
     }
 
@@ -46,23 +70,46 @@ impl<'a> Input<'a> {
         self.title = title;
         self
     }
-}
 
-impl<'a> Widget for Input<'a> {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
-        buf.set_style(area, self.style);
-        let area = match self.block.take() {
-            Some(b) => {
-                let inner_area = b.inner(area);
-                b.render(area, buf);
-                inner_area
-            }
-            None => area,
-        };
-        if area.height > 3 {
-            return;
+    pub fn is_password(mut self, is_password: bool) -> Self {
+        self.is_password = is_password;
+        self
+    }
+
+    pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, system_tick: &u64) {
+        let val_len = self.val.len();
+        let show_text =
+            if val_len == 0 {
+                self.placeholder.clone()
+            } else {
+                if self.is_password {
+                    "*".repeat(val_len)
+                } else {
+                    self.val.clone()
+                }
+            };
+        let text = Paragraph::new(if self.focus {
+            Spans::from(vec![
+                Span::from(show_text),
+                Span::styled(
+                    " ",
+                    Style::default().bg(if system_tick % 2 == 0 {
+                        Color::Black
+                    } else {
+                        Color::White
+                    }),
+                ),
+            ])
+        } else {
+            Spans::from(show_text)
+        });
+        if self.block {
+            f.render_widget(
+                text.block(Block::default().title(self.title.as_ref()).borders(Borders::ALL)),
+                area,
+            );
+        } else {
+            f.render_widget(text, area);
         }
-        let style = self.style;
-        buf.set_string(0, 0, &self.val, style);
     }
 }

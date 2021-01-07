@@ -91,6 +91,7 @@ fn main() -> Result<()> {
                     app.on_ctrl_key(code);
                 },
                 _ => {
+                    app.input_on_key(event.code);
                     match event.code {
                         KeyCode::Char('q') => {
                             disable_raw_mode()?;

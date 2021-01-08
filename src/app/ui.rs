@@ -2,7 +2,7 @@ use crate::app::{input::Input, App, Focus, Route};
 use crate::util::utils::{pre_format, show_duration};
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Rect, Margin},
     style::{Color, Modifier, Style},
     symbols,
     text::{Span, Spans},
@@ -46,6 +46,7 @@ pub fn draw_login<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 pub fn draw_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     match app.route {
         Route::Login => draw_login_page(f, app),
+        Route::Loading => draw_loading_page(f, app),
         Route::Home => draw_main_page(f, app),
         Route::Search => draw_search_page(f, app),
         Route::MusicAnalysis => draw_music_analysis(f, app),
@@ -62,6 +63,7 @@ pub fn draw_main_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 Constraint::Percentage(80),
                 Constraint::Min(2),
                 Constraint::Length(1),
+                Constraint::Length(1),
             ]
             .as_ref(),
         )
@@ -70,6 +72,7 @@ pub fn draw_main_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     draw_main_content(f, app, chunks[1]);
     draw_control_bar(f, app, chunks[2]);
     draw_percent(f, app, chunks[3]);
+    draw_lyric(f, app, chunks[4]);
 }
 
 pub fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
@@ -307,6 +310,20 @@ fn draw_percent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     f.render_widget(gauge_play_duration, area);
 }
 
+fn draw_lyric<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
+    let lyric_row = app.get_avaiable_lrc_row();
+    let text = Gauge::default()
+        .gauge_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .bg(Color::Black)
+                .add_modifier(Modifier::ITALIC),
+        ).label(lyric_row)
+        .percent(0);
+
+    f.render_widget(text, area);
+}
+
 /// 绘制登录页
 fn draw_login_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
@@ -380,4 +397,24 @@ fn draw_search_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 fn draw_music_analysis<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let block = Block::default().title("音乐").borders(Borders::ALL);
     f.render_widget(block, f.size());
+}
+
+/// 绘制加载页面
+fn draw_loading_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    let system_tick = &app.system_tick;
+    let mut text = String::from("加载中...");
+    let c = match system_tick % 4 {
+        0 => '|',
+        1 => '/',
+        2 => '-',
+        3 => '\\',
+        _ => '|',
+    };
+    text.push(c);
+    let p = Paragraph::new(
+        Spans::from(text)
+    ).block(Block::default().borders(Borders::ALL));
+
+    f.render_widget(p, f.size().inner(&Margin { vertical: 20, horizontal: 20 }));
+    
 }

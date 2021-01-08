@@ -2,6 +2,9 @@
 pub mod event;
 pub mod network;
 pub mod utils;
+mod lyric_parser;
+
+pub use lyric_parser::{LyricRow, parse_rows};
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;

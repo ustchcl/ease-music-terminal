@@ -71,3 +71,11 @@ pub fn download_music(url: &str, music_name: &str) -> Option<String> {
     }
     str
 }
+
+
+pub fn get_lyric_by_music_id(id: &i64, app: &App) -> Result<Lyric> {
+    let url = format!("{}/lyric?id={}", base_url(), id);
+    let res = app.client.get(&url).send()?;
+    let lyric_rp = res.json::<LyricRep>()?;
+    Ok(lyric_rp.lrc)
+}

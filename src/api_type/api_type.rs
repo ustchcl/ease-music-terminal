@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::util::LyricRow;
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Profile {
@@ -135,4 +137,22 @@ pub struct LikeListRep {
     pub ids: Vec<i64>,
     pub check_point: i64,
     pub code: i32,
+}
+
+/// ------- 歌词 ---------
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct LyricRep {
+    pub code: i32, 
+    pub sgc: bool,
+    pub sfy: bool,
+    pub qfy: bool,
+    pub lrc: Lyric,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Lyric {
+    pub version: i32,
+    pub lyric: String,
 }

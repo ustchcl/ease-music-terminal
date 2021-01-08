@@ -71,6 +71,11 @@ impl Input {
         self
     }
 
+    pub fn val(mut self, val: String) -> Self {
+        self.val = val;
+        self
+    }
+
     pub fn is_password(mut self, is_password: bool) -> Self {
         self.is_password = is_password;
         self

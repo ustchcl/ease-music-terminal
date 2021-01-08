@@ -1,4 +1,4 @@
-use crate::api_type::api_type::{AccountDetail, Playlist, PlaylistDetail, Track};
+use crate::{api_type::api_type::{AccountDetail, Playlist, PlaylistDetail, Track}, util::{LyricRow, parse_rows}};
 use crate::util::network;
 use crate::util::StatefulList;
 use crossterm::event::KeyCode;
@@ -16,6 +16,7 @@ pub enum Focus {
 #[derive(PartialEq, Eq)]
 pub enum Route {
     Login,         // 登陆页面
+    Loading,       // 加载页面
     Home,          // 主页面
     Search,        // 搜索页面
     MusicAnalysis, // 音乐播放详情页面
@@ -62,6 +63,10 @@ pub struct App<'a> {
     pub sink: Sink,
 
     pub player_controller: PlayerController,
+
+    // 歌词
+    pub show_lrc: bool,
+    pub lrc: Vec<LyricRow>,
 }
 
 impl<'a> App<'a> {
@@ -72,10 +77,12 @@ impl<'a> App<'a> {
                 Input::default()
                     .title("👦用户名".to_string())
                     .placeholder("请输入用户名".to_string())
+                    .val("18500975410".to_string())
                     .block(true),
                 Input::default()
                     .title("🔒密码".to_string())
                     .placeholder("请输入密码".to_string())
+                    .val("s1s2s3".to_string())
                     .is_password(true)
                     .block(true)
                     
@@ -107,6 +114,9 @@ impl<'a> App<'a> {
                 seek: 0,
                 volume: 1.0,
             },
+
+            lrc: vec![],
+            show_lrc: true,
         }
     }
 
@@ -190,6 +200,7 @@ impl<'a> App<'a> {
                     format!("{}.{}", track_name, file_type).as_ref(),
                 );
                 if let Some(path) = current_music_path {
+                    self.fetch_lrc(id);
                     self.play_music(&path);
                 }
             }
@@ -209,6 +220,7 @@ impl<'a> App<'a> {
         self.sink.set_volume(self.player_controller.volume);
         self.sink.append(Decoder::new(buf).unwrap());
     }
+
 
     pub fn on_key(&mut self, c: char) {
         match c {
@@ -360,7 +372,9 @@ impl<'a> App<'a> {
     pub fn like(&mut self) {}
 
     // 打开/关闭歌词
-    pub fn show_lrc(&mut self) {}
+    pub fn show_lrc(&mut self) {
+        self.show_lrc = !self.show_lrc;
+    }
 
     //  显示帮助
     pub fn show_help(&mut self) {}
@@ -391,6 +405,7 @@ impl<'a> App<'a> {
     }
 
     pub fn login(&mut self) -> anyhow::Result<()>{
+        self.goto_page(Route::Loading);
         network::login(self)?;
         network::get_like_list(self)?;
         network::playlists(self)?;
@@ -400,6 +415,30 @@ impl<'a> App<'a> {
 
         Ok(())
     }
+
+    
+    fn fetch_lrc(&mut self, id: i64)  {
+        if let Ok(lyric) = network::get_lyric_by_music_id(&id, self) {
+            self.lrc = parse_rows(lyric.lyric.as_ref());
+        }
+    }
+
+    pub fn get_avaiable_lrc_row(&self) -> &str {
+        if self.lrc.is_empty() {
+            "暂无歌词"
+        } else {
+            let l = self.lrc.len();
+            let mut index = 0;
+            for i in 0..l {
+                if self.lrc[l-i-1].start < self.player_controller.seek {
+                    index = i;
+                    break;
+                }
+            }
+            self.lrc[l - index - 1].content.as_ref()
+        }
+    }
+
 }
 
 // 回调函数

@@ -284,6 +284,12 @@ fn draw_control_bar<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         .label(format!("{}: {}%", volume_icon, volume))
         .percent(volume);
     f.render_widget(gauge, chunks_volume[0]);
+    f.render_widget(
+        Paragraph::new(
+            Spans::from("音量+: Ctrl+↑  音量-: Ctrl+↓"),
+        ),
+        chunks_volume[1],
+    );
 }
 
 fn draw_percent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {

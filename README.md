@@ -1,7 +1,21 @@
-## 须知
+# Ease Music Terminal
+一个网易云音乐的终端版客户端.
+
+![](preview.png)
+
+
+**当前功能**  
+ 1. 查看创建的播放列表
+ 2. 查看列表详情
+ 3. 播放音乐, 音乐播放控制
+ 4. 歌词
+
+## 须知 
 ```shell
+## ubuntu
 apt install libasound2-dev
 ```
+
 
 ## v0.1
 - 列表
@@ -22,6 +36,11 @@ apt install libasound2-dev
 - [x] Login
 - [x] dotenv login
 - [x] 歌词显示
+
+## v0.5
+- [ ] 不再使用自己部署的网易云API
+- [ ] 配置文件
+
 
 ### 网易云API
 

@@ -77,12 +77,10 @@ impl<'a> App<'a> {
                 Input::default()
                     .title("👦用户名".to_string())
                     .placeholder("请输入用户名".to_string())
-                    .val("18500975410".to_string())
                     .block(true),
                 Input::default()
                     .title("🔒密码".to_string())
                     .placeholder("请输入密码".to_string())
-                    .val("s1s2s3".to_string())
                     .is_password(true)
                     .block(true)
                     

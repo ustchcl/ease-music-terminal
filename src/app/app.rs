@@ -5,6 +5,7 @@ use crossterm::event::KeyCode;
 use reqwest::blocking::Client;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use crate::app::Input;
+use image::RgbaImage;
 use anyhow;
 
 #[derive(PartialEq, Eq)]
@@ -67,10 +68,12 @@ pub struct App<'a> {
     // 歌词
     pub show_lrc: bool,
     pub lrc: Vec<LyricRow>,
+
+    pub temp_img: RgbaImage,
 }
 
 impl<'a> App<'a> {
-    pub fn new(title: &'a str, handle: &'a OutputStreamHandle) -> Self {
+    pub fn new(title: &'a str, handle: &'a OutputStreamHandle, image: RgbaImage) -> Self {
         Self {
             route: Route::Login,
             inputs: vec![
@@ -115,6 +118,8 @@ impl<'a> App<'a> {
 
             lrc: vec![],
             show_lrc: true,
+
+            temp_img: image,
         }
     }
 

@@ -14,6 +14,8 @@ use tui::{
     Frame,
 };
 
+use super::image::{ColorMode, Image};
+
 pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
@@ -363,6 +365,15 @@ fn draw_login_page<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_widget(Paragraph::new(app_title), chunks[0]);
     app.inputs[0].draw(f, chunks[1], &app.system_tick);
     app.inputs[1].draw(f, chunks[2], &app.system_tick);
+    
+    let image = Image::with_img(&app.temp_img).color_mode(ColorMode::Rgb);
+    f.render_widget(image, Rect {
+        x: 10,
+        y: 20,
+        height: 10,
+        width: 30
+    });
+
     f.render_widget(Paragraph::new(login_helper), chunks[3]);
 }
 

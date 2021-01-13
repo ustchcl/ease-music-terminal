@@ -73,7 +73,8 @@ fn main() -> Result<()> {
     });
 
     let (_stream, handle) = OutputStream::try_default().unwrap();
-    let mut app = App::new("Ease Music Termianl", &handle);
+    let image = image::open("src/assets/cover.png")?.to_rgba8();
+    let mut app = App::new("Ease Music Termianl", &handle, image);
     // network::login(&mut app)?;
     // network::get_like_list(&mut app)?;
     // network::playlists(&mut app)?;
